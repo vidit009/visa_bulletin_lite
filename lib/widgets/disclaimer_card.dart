@@ -7,10 +7,24 @@ import '../constants/app_constants.dart';
 class DisclaimerCard extends StatelessWidget {
   const DisclaimerCard({super.key});
 
-  Future<void> _openUrl(String url) async {
+  Future<void> _openUrl(BuildContext context, String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      }
+    } catch (e) {
+      debugPrint('External browser launch error: $e, trying platformDefault...');
+      try {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (err) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not open link: $url')),
+          );
+        }
+      }
     }
   }
 
@@ -64,7 +78,7 @@ class DisclaimerCard extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.open_in_new_rounded, size: 14),
                 label: const Text('travel.state.gov', style: TextStyle(fontSize: 11)),
-                onPressed: () => _openUrl(AppConstants.officialDosUrl),
+                onPressed: () => _openUrl(context, AppConstants.officialDosUrl),
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
@@ -74,7 +88,7 @@ class DisclaimerCard extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.open_in_new_rounded, size: 14),
                 label: const Text('USCIS Filing Dates', style: TextStyle(fontSize: 11)),
-                onPressed: () => _openUrl(AppConstants.officialUscisUrl),
+                onPressed: () => _openUrl(context, AppConstants.officialUscisUrl),
               ),
             ],
           ),

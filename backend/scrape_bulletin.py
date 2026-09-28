@@ -299,9 +299,15 @@ def main():
                 merged_prev[key] = {}
             merged_prev[key].update(table_data)
 
+    # Preserve original publishedAt timestamp unless a newly released bulletin month is detected
+    if existing.get("month") == scraped["month"] and existing.get("publishedAt"):
+        published_at = existing["publishedAt"]
+    else:
+        published_at = datetime.now(timezone.utc).isoformat()
+
     output = {
         "month": scraped["month"],
-        "publishedAt": datetime.now(timezone.utc).isoformat(),
+        "publishedAt": published_at,
         "previousMonth": scraped["previousMonth"],
         "sourceUrl": scraped["sourceUrl"],
         "uscisFilingChart": scraped["uscisFilingChart"],

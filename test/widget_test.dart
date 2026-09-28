@@ -252,9 +252,36 @@ void main() {
       await tester.pump();
 
       expect(find.text('PENDING NEW RELEASE'), findsOneWidget);
-      expect(find.textContaining('bulletin is not yet published'), findsOneWidget);
-      expect(find.textContaining('Showing cutoff dates from the last published bulletin'), findsOneWidget);
-      expect(find.textContaining('August'), findsWidgets);
+      expect(find.textContaining('Next edition (October 2026) is not yet published.'), findsOneWidget);
+      expect(find.textContaining('Showing cutoff dates from the latest published bulletin (September 2026 · Aug 12, 2026)'), findsOneWidget);
+      expect(find.textContaining('Daily checks will notify you as soon as the Department of State releases October 2026.'), findsOneWidget);
+    });
+
+    test('BulletinStatusCallout getNextEdition rolls over months and years correctly', () {
+      expect(BulletinStatusCallout.getNextEdition('September 2026'), 'October 2026');
+      expect(BulletinStatusCallout.getNextEdition('December 2026'), 'January 2027');
+      expect(BulletinStatusCallout.getNextEdition('January 2027'), 'February 2027');
+    });
+
+    testWidgets('Disclaimer Card displays store compliance disclaimers and clickable official buttons', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DisclaimerCard(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Official Data Source & Legal Disclaimer'), findsOneWidget);
+      expect(find.text('travel.state.gov'), findsOneWidget);
+      expect(find.text('USCIS Filing Dates'), findsOneWidget);
+
+      // Verify buttons are interactive and do not crash
+      await tester.tap(find.text('travel.state.gov'));
+      await tester.pump();
+      await tester.tap(find.text('USCIS Filing Dates'));
+      await tester.pump();
     });
 
     testWidgets('Onboarding Screen allows selecting country, category, and completing setup', (tester) async {

@@ -13,25 +13,41 @@ class BulletinStatusCallout extends StatelessWidget {
     this.onRefresh,
   });
 
+  static String getNextEdition(String currentBulletinMonth) {
+    final parts = currentBulletinMonth.trim().split(' ');
+    if (parts.length >= 2) {
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      final idx = months.indexWhere((m) => m.toLowerCase() == parts[0].toLowerCase());
+      if (idx != -1) {
+        final year = int.tryParse(parts[1]) ?? DateTime.now().year;
+        if (idx == 11) {
+          return 'January ${year + 1}';
+        } else {
+          return '${months[idx + 1]} $year';
+        }
+      }
+    }
+    return 'Next Month';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     DateTime? pubDate;
-    String? pubMonthName;
     String? pubFormattedDate;
 
     if (publishedAt != null && publishedAt!.isNotEmpty) {
       pubDate = DateTime.tryParse(publishedAt!);
       if (pubDate != null) {
-        pubMonthName = DateFormat('MMMM').format(pubDate);
         pubFormattedDate = DateFormat('MMM d, yyyy').format(pubDate);
       }
     }
 
-    final now = DateTime.now();
-    final currentMonthName = DateFormat('MMMM').format(now);
-    final lastMonthName = pubMonthName ?? 'previous month';
+    final nextEdition = getNextEdition(bulletinMonth);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -104,7 +120,7 @@ class BulletinStatusCallout extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'This month\'s ($currentMonthName) bulletin is not yet published.',
+                  'Next edition ($nextEdition) is not yet published.',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -114,7 +130,7 @@ class BulletinStatusCallout extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Showing cutoff dates from the last published bulletin ($lastMonthName${pubFormattedDate != null ? ' • $pubFormattedDate' : ''}). Daily checks will notify you as soon as the Department of State releases the new edition.',
+                  'Showing cutoff dates from the latest published bulletin ($bulletinMonth${pubFormattedDate != null ? ' · $pubFormattedDate' : ''}). Daily checks will notify you as soon as the Department of State releases $nextEdition.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.35,

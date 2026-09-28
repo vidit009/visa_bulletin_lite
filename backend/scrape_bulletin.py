@@ -97,18 +97,31 @@ def parse_bulletin_html(html, url):
 
 
 def main():
-    print("Launching Chromium via Playwright to bypass Cloudflare protection...")
+    print("Launching Chromium via Playwright with stealth mode...")
+    from playwright_stealth import stealth_sync
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-web-security",
+            ],
+        )
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800},
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            locale="en-US",
+            timezone_id="America/New_York",
         )
         page = context.new_page()
+        stealth_sync(page)
 
         print(f"Navigating to {INDEX_URL}...")
         page.goto(INDEX_URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(5000)
 
         index_html = page.content()
         soup = BeautifulSoup(index_html, "html.parser")

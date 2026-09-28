@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Playwright & Dependencies
         run: |
-          pip install playwright beautifulsoup4
+          pip install playwright playwright-stealth beautifulsoup4
           playwright install chromium --with-deps
 
       - name: Run Bulletin Scraper

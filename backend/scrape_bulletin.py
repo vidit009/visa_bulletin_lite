@@ -173,6 +173,10 @@ def scrape_uscis():
     chart_page_link = re.search(r'href=[\"\'](/green-card/[^\"\']+when-to-file[^\"\']+)[\"\']', target_section)
     if not chart_page_link:
         chart_page_link = re.search(r'href=[\"\'](https://[^\"]+when-to-file[^\"]+)[\"\']', target_section)
+    if not chart_page_link:
+        chart_page_link = re.search(r'href=[\"\'](/green-card/[^\"\']+when-to-file[^\"\']+)[\"\']', index_html)
+    if not chart_page_link:
+        chart_page_link = re.search(r'href=[\"\'](https://[^\"]+when-to-file[^\"]+)[\"\']', index_html)
 
     chart_url = None
     if chart_page_link:

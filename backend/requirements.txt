@@ -1,0 +1,5 @@
+azure-functions
+beautifulsoup4==4.12.3
+requests==2.32.3
+azure-storage-blob==12.23.1
+firebase-admin==6.5.0

@@ -117,7 +117,9 @@ def fetch_url(url):
     ]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True)
-        print(f"curl fetch {url.split('/')[-1][:25]} -> code: {res.returncode}, len: {len(res.stdout)}, stderr: {res.stderr[:80]}")
+        print(f"curl fetch {url.split('/')[-1][:25]} -> code: {res.returncode}, len: {len(res.stdout)}")
+        if len(res.stdout) <= 1000:
+            print(f"Payload preview: {repr(res.stdout)}")
         if res.returncode == 0 and len(res.stdout) > 500:
             return res.stdout
     except Exception as e:

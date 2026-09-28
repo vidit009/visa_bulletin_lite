@@ -137,7 +137,7 @@ def scrape_uscis():
     index_html = fetch_url(USCIS_INDEX)
 
     # Detect Next Month section to catch newly released bulletins immediately
-    next_month_match = re.search(r"<h2>Next Month.*?</h2>(.*?)(?:<h2>|$)", index_html, re.DOTALL | re.IGNORECASE)
+    next_month_match = re.search(r"<h2[^>]*>Next Month.*?</h2>(.*?)(?:<h2|$)", index_html, re.DOTALL | re.IGNORECASE)
     use_next = False
     target_section = ""
     if next_month_match:
@@ -148,7 +148,7 @@ def scrape_uscis():
             print("Detected newly published NEXT MONTH bulletin on USCIS!")
 
     if not use_next:
-        curr_month_match = re.search(r"<h2>Current Month.*?</h2>(.*?)(?:<h2>|$)", index_html, re.DOTALL | re.IGNORECASE)
+        curr_month_match = re.search(r"<h2[^>]*>Current Month.*?</h2>(.*?)(?:<h2|$)", index_html, re.DOTALL | re.IGNORECASE)
         target_section = curr_month_match.group(1) if curr_month_match else index_html
 
     # Extract Month Name
@@ -227,7 +227,7 @@ def scrape_uscis():
 
     prev_month_name = expected_prev
     prev_tables = {}
-    prev_section = re.search(r"<h2>Previous Adjustment of Status Filing Charts</h2>(.*?)$", index_html, re.DOTALL | re.IGNORECASE)
+    prev_section = re.search(r"<h2[^>]*>Previous Adjustment of Status Filing Charts</h2>(.*?)$", index_html, re.DOTALL | re.IGNORECASE)
     if prev_section:
         links = re.findall(r'<a[^>]+href=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</a>', prev_section.group(1), re.DOTALL)
         for href, text in links:

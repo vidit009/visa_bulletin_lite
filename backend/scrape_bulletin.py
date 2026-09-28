@@ -100,14 +100,14 @@ def safe_open(sb, url):
     print(f"Navigating to {url}...")
     sb.uc_open_with_reconnect(url, reconnect_time=6)
     sb.sleep(4)
-    for attempt in range(6):
+    for attempt in range(8):
         title = sb.get_title()
         if "Just a moment" in title or "Attention Required" in title:
-            print(f"Cloudflare challenge on {url} ({title}), solving attempt {attempt + 1}...")
+            print(f"Cloudflare challenge on {url} ({title}), clicking captcha (attempt {attempt + 1})...")
             try:
-                sb.uc_click_turnstile_if_present()
+                sb.uc_gui_click_captcha()
             except Exception as e:
-                print(f"Turnstile click note: {e}")
+                print(f"Captcha click note: {e}")
             sb.sleep(5)
         else:
             break
@@ -116,8 +116,8 @@ def safe_open(sb, url):
 
 
 def main():
-    print("Launching Undetected Chrome via SeleniumBase to bypass Cloudflare...")
-    with SB(uc=True, test=False, headless=True) as sb:
+    print("Launching Undetected Chrome via SeleniumBase inside Xvfb display...")
+    with SB(uc=True, test=False, headless=False) as sb:
         index_html = safe_open(sb, INDEX_URL)
         soup = BeautifulSoup(index_html, "html.parser")
         bulletin_links = []

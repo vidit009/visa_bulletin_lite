@@ -22,14 +22,19 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install SeleniumBase & Chrome
+      - name: Install System Dependencies
         run: |
-          pip install seleniumbase beautifulsoup4
+          sudo apt-get update
+          sudo apt-get install -y xvfb python3-tk python3-dev libxkbcommon-x11-0
+
+      - name: Install Python Dependencies
+        run: |
+          pip install seleniumbase pyautogui beautifulsoup4
           sbase install chromedriver
 
       - name: Run Bulletin Scraper
         run: |
-          xvfb-run --auto-servernum python backend/scrape_bulletin.py
+          xvfb-run --server-args="-screen 0 1920x1080x24" python backend/scrape_bulletin.py
 
       - name: Commit and Push if Changed
         run: |

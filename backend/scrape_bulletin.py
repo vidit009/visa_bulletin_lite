@@ -107,23 +107,38 @@ def main():
         page = context.new_page()
 
         print(f"Navigating to {INDEX_URL}...")
-        page.goto(INDEX_URL, wait_until="domcontentloaded", timeout=60000)
+        page.goto(INDEX_URL, wait_until="networkidle", timeout=60000)
         page.wait_for_timeout(3000)
 
         index_html = page.content()
         soup = BeautifulSoup(index_html, "html.parser")
         bulletin_links = []
         for a in soup.select("a[href]"):
-            href = a["href"]
-            text = clean(a.get_text())
-            if "visa-bulletin-for-" in href.lower() or "visa bulletin for" in text.lower():
+            href = a["href"].strip()
+            text = clean(a.get_text()).lower()
+            if any(term in href.lower() for term in ["visa-bulletin-for-", "visa-bulletin/20"]) or ("bulletin for" in text and "visa" in text):
                 if href.startswith("/"):
                     href = "https://travel.state.gov" + href
                 if href not in bulletin_links:
                     bulletin_links.append(href)
+                    print(f"Found bulletin link: {href} (text: {text})")
 
         if not bulletin_links:
-            raise RuntimeError("No Visa Bulletin links found on index page")
+            # Fallback: check all links containing 'bulletin'
+            for a in soup.select("a[href]"):
+                href = a["href"].strip()
+                if "bulletin" in href.lower() and ("/202" in href or "current" in href.lower()):
+                    if href.startswith("/"):
+                        href = "https://travel.state.gov" + href
+                    if href not in bulletin_links:
+                        bulletin_links.append(href)
+                        print(f"Fallback link: {href}")
+
+        if not bulletin_links:
+            # Log all links for debugging
+            all_links = [a.get("href") for a in soup.select("a[href]") if a.get("href")]
+            print(f"DEBUG: Found {len(all_links)} total links on page. Sample: {all_links[:15]}")
+            raise RuntimeError(f"No Visa Bulletin links found on index page (page title: {soup.title.string if soup.title else 'none'})")
 
         current_url = bulletin_links[0]
         prev_url = bulletin_links[1] if len(bulletin_links) > 1 else None

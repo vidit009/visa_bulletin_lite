@@ -105,9 +105,9 @@ def safe_open(sb, url):
         if "Just a moment" in title or "Attention Required" in title:
             print(f"Cloudflare challenge on {url} ({title}), solving attempt {attempt + 1}...")
             try:
-                sb.uc_gui_click_captcha()
+                sb.uc_click_turnstile_if_present()
             except Exception as e:
-                print(f"Captcha click note: {e}")
+                print(f"Turnstile click note: {e}")
             sb.sleep(5)
         else:
             break

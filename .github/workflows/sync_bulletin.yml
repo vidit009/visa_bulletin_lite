@@ -2,8 +2,9 @@ name: Sync Visa Bulletin Data
 
 on:
   schedule:
-    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
-    - cron: '0 */6 * * *'
+    # Runs every 2 hours at minute 15 (e.g. 01:15, 03:15, 05:15... UTC)
+    # Using an offset minute avoids top-of-hour GitHub queue congestion
+    - cron: '15 */2 * * *'
   workflow_dispatch:
 
 permissions:

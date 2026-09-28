@@ -22,9 +22,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install Dependencies
+      - name: Install Playwright & Dependencies
         run: |
-          pip install curl_cffi beautifulsoup4 requests
+          pip install playwright beautifulsoup4
+          playwright install chromium --with-deps
 
       - name: Run Bulletin Scraper
         run: |
@@ -38,6 +39,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes in Visa Bulletin data."
           else
-            git commit -m "Auto-sync: update Visa Bulletin data [skip ci]"
+            git commit -m "Auto-sync: update Visa Bulletin data from State.gov [skip ci]"
             git push
           fi

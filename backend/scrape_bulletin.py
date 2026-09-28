@@ -1,10 +1,9 @@
 import json
 import os
 import re
-import sys
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-from curl_cffi import requests
+from playwright.sync_api import sync_playwright
 
 INDEX_URL = "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html"
 USCIS_URL = "https://www.uscis.gov/green-card/green-card-processes-and-procedures/visa-availability-priority-dates/adjustment-of-status-filing-charts-from-the-visa-bulletin"
@@ -13,31 +12,6 @@ COUNTRIES = ["All Chargeability", "China", "India", "Mexico", "Philippines"]
 
 def clean(x):
     return " ".join(x.split()).strip() if x else ""
-
-
-def get_latest_bulletin_urls():
-    """Finds current and previous bulletin URLs from the official index."""
-    resp = requests.get(INDEX_URL, impersonate="chrome120", timeout=30)
-    if resp.status_code != 200:
-        raise RuntimeError(f"Failed to fetch index: HTTP {resp.status_code}")
-
-    soup = BeautifulSoup(resp.text, "html.parser")
-    bulletin_links = []
-    for a in soup.select("a[href]"):
-        href = a["href"]
-        text = clean(a.get_text())
-        if "visa-bulletin-for-" in href.lower() or "visa bulletin for" in text.lower():
-            if href.startswith("/"):
-                href = "https://travel.state.gov" + href
-            if href not in bulletin_links:
-                bulletin_links.append(href)
-
-    if not bulletin_links:
-        raise RuntimeError("No Visa Bulletin links found on index page")
-
-    current_url = bulletin_links[0]
-    prev_url = bulletin_links[1] if len(bulletin_links) > 1 else None
-    return current_url, prev_url
 
 
 def normalize_category(label, is_employment):
@@ -90,12 +64,8 @@ def parse_table_rows(table, is_employment):
     return rows
 
 
-def parse_bulletin_page(url):
-    resp = requests.get(url, impersonate="chrome120", timeout=30)
-    if resp.status_code != 200:
-        raise RuntimeError(f"Failed to fetch bulletin at {url}: HTTP {resp.status_code}")
-
-    soup = BeautifulSoup(resp.text, "html.parser")
+def parse_bulletin_html(html, url):
+    soup = BeautifulSoup(html, "html.parser")
     title = clean((soup.find("h1") or soup.find("title")).get_text())
     m = re.search(r"(?:For\s+)?([A-Z][a-z]+\s+20\d{2})", title)
     month = m.group(1) if m else title
@@ -126,40 +96,78 @@ def parse_bulletin_page(url):
     }
 
 
-def get_uscis_determination():
-    """Extracts USCIS filing chart determination (Dates for Filing vs Final Action Dates)."""
-    try:
-        resp = requests.get(USCIS_URL, impersonate="chrome120", timeout=20)
-        if resp.status_code == 200:
-            text = resp.text.lower()
-            if "dates for filing" in text and "use the dates for filing" in text:
-                return "Dates for Filing", "For all employment-based categories, you must use the Dates for Filing chart."
-            if "final action dates" in text and "use the final action dates" in text:
-                return "Final Action Dates", "USCIS determined to use Final Action Dates for Adjustment of Status this month."
-    except Exception as e:
-        print(f"USCIS determination notice: {e}")
-    return "Dates for Filing", "Check official USCIS Adjustment of Status filing chart."
-
-
 def main():
-    print("Fetching Department of State Visa Bulletin...")
-    current_url, prev_url = get_latest_bulletin_urls()
-    print(f"Current Bulletin URL: {current_url}")
-    print(f"Previous Bulletin URL: {prev_url}")
+    print("Launching Chromium via Playwright to bypass Cloudflare protection...")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 800},
+        )
+        page = context.new_page()
 
-    current_data = parse_bulletin_page(current_url)
-    previous_tables = {}
-    previous_month = None
+        print(f"Navigating to {INDEX_URL}...")
+        page.goto(INDEX_URL, wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(3000)
 
-    if prev_url:
+        index_html = page.content()
+        soup = BeautifulSoup(index_html, "html.parser")
+        bulletin_links = []
+        for a in soup.select("a[href]"):
+            href = a["href"]
+            text = clean(a.get_text())
+            if "visa-bulletin-for-" in href.lower() or "visa bulletin for" in text.lower():
+                if href.startswith("/"):
+                    href = "https://travel.state.gov" + href
+                if href not in bulletin_links:
+                    bulletin_links.append(href)
+
+        if not bulletin_links:
+            raise RuntimeError("No Visa Bulletin links found on index page")
+
+        current_url = bulletin_links[0]
+        prev_url = bulletin_links[1] if len(bulletin_links) > 1 else None
+        print(f"Current Bulletin URL: {current_url}")
+        print(f"Previous Bulletin URL: {prev_url}")
+
+        print(f"Fetching current bulletin: {current_url}...")
+        page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(3000)
+        current_html = page.content()
+        current_data = parse_bulletin_html(current_html, current_url)
+
+        previous_tables = {}
+        previous_month = None
+        if prev_url:
+            try:
+                print(f"Fetching previous bulletin: {prev_url}...")
+                page.goto(prev_url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(3000)
+                prev_html = page.content()
+                prev_data = parse_bulletin_html(prev_html, prev_url)
+                previous_tables = prev_data["tables"]
+                previous_month = prev_data["month"]
+            except Exception as e:
+                print(f"Warning: could not parse previous bulletin: {e}")
+
+        # Check USCIS determination
+        chart_type = "Dates for Filing"
+        note = "For all employment-based preference categories, you must use the Dates for Filing chart."
         try:
-            prev_data = parse_bulletin_page(prev_url)
-            previous_tables = prev_data["tables"]
-            previous_month = prev_data["month"]
+            print("Checking USCIS adjustment of status chart determination...")
+            page.goto(USCIS_URL, wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(2000)
+            uscis_text = page.content().lower()
+            if "dates for filing" in uscis_text and "use the dates for filing" in uscis_text:
+                chart_type = "Dates for Filing"
+                note = "For all employment-based preference categories, you must use the Dates for Filing chart in the Department of State Visa Bulletin."
+            elif "final action dates" in uscis_text and "use the final action dates" in uscis_text:
+                chart_type = "Final Action Dates"
+                note = "USCIS determined to use the Final Action Dates chart this month."
         except Exception as e:
-            print(f"Warning: could not parse previous bulletin: {e}")
+            print(f"USCIS check notice: {e}")
 
-    chart_type, note = get_uscis_determination()
+        browser.close()
 
     output = {
         "month": current_data["month"],

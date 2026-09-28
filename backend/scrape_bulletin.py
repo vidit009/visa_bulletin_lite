@@ -118,10 +118,9 @@ def fetch_url(url):
     try:
         res = subprocess.run(cmd, capture_output=True, text=True)
         print(f"curl fetch {url.split('/')[-1][:25]} -> code: {res.returncode}, len: {len(res.stdout)}")
-        if len(res.stdout) <= 1000:
-            print(f"Payload preview: {repr(res.stdout)}")
-        if res.returncode == 0 and len(res.stdout) > 500:
+        if "Access Denied" not in res.stdout and res.returncode == 0 and len(res.stdout) > 2000:
             return res.stdout
+        print(f"curl returned blocked or truncated response ({len(res.stdout)} bytes), trying direct urllib...")
     except Exception as e:
         print(f"curl notice: {e}, falling back to urllib...")
 
@@ -130,9 +129,28 @@ def fetch_url(url):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
     }
-    req = urllib.request.Request(url, headers=headers)
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, context=get_ssl_context(), timeout=30) as resp:
+            content = resp.read().decode("utf-8")
+            if "Access Denied" not in content and len(content) > 2000:
+                return content
+            print(f"urllib returned blocked response ({len(content)} bytes), falling back to reader proxy...")
+    except Exception as e:
+        print(f"urllib error: {e}, falling back to reader proxy...")
+
+    # Fallback via reader proxy (bypasses datacenter IP blocks from government WAFs)
+    proxy_url = f"https://r.jina.ai/{url}"
+    print(f"Fetching via reader proxy: {proxy_url}...")
+    proxy_headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        "X-Return-Format": "html",
+    }
+    req = urllib.request.Request(proxy_url, headers=proxy_headers)
     with urllib.request.urlopen(req, context=get_ssl_context(), timeout=30) as resp:
-        return resp.read().decode("utf-8")
+        content = resp.read().decode("utf-8")
+        print(f"Reader proxy returned {len(content)} bytes.")
+        return content
 
 
 def scrape_uscis():

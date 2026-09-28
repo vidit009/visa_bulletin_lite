@@ -96,14 +96,29 @@ def parse_bulletin_html(html, url):
     }
 
 
+def safe_open(sb, url):
+    print(f"Navigating to {url}...")
+    sb.uc_open_with_reconnect(url, reconnect_time=6)
+    sb.sleep(4)
+    for attempt in range(6):
+        title = sb.get_title()
+        if "Just a moment" in title or "Attention Required" in title:
+            print(f"Cloudflare challenge on {url} ({title}), solving attempt {attempt + 1}...")
+            try:
+                sb.uc_gui_click_captcha()
+            except Exception as e:
+                print(f"Captcha click note: {e}")
+            sb.sleep(5)
+        else:
+            break
+    print(f"Loaded: {sb.get_title()}")
+    return sb.get_page_source()
+
+
 def main():
     print("Launching Undetected Chrome via SeleniumBase to bypass Cloudflare...")
     with SB(uc=True, test=False, headless=True) as sb:
-        print(f"Navigating to {INDEX_URL}...")
-        sb.uc_open_with_reconnect(INDEX_URL, reconnect_time=4)
-        sb.sleep(3)
-
-        index_html = sb.get_page_source()
+        index_html = safe_open(sb, INDEX_URL)
         soup = BeautifulSoup(index_html, "html.parser")
         bulletin_links = []
         for a in soup.select("a[href]"):
@@ -117,7 +132,6 @@ def main():
                     print(f"Found bulletin link: {href} (text: {text})")
 
         if not bulletin_links:
-            # Fallback scan
             for a in soup.select("a[href]"):
                 href = a["href"].strip()
                 if "bulletin" in href.lower() and "/202" in href:
@@ -127,7 +141,7 @@ def main():
                         bulletin_links.append(href)
 
         if not bulletin_links:
-            page_title = soup.title.string if soup.title else "unknown"
+            page_title = sb.get_title()
             raise RuntimeError(f"No Visa Bulletin links found on index page (page title: {page_title})")
 
         current_url = bulletin_links[0]
@@ -136,9 +150,7 @@ def main():
         print(f"Previous Bulletin URL: {prev_url}")
 
         print(f"Fetching current bulletin: {current_url}...")
-        sb.uc_open_with_reconnect(current_url, reconnect_time=3)
-        sb.sleep(2)
-        current_html = sb.get_page_source()
+        current_html = safe_open(sb, current_url)
         current_data = parse_bulletin_html(current_html, current_url)
 
         previous_tables = {}
@@ -146,9 +158,7 @@ def main():
         if prev_url:
             try:
                 print(f"Fetching previous bulletin: {prev_url}...")
-                sb.uc_open_with_reconnect(prev_url, reconnect_time=3)
-                sb.sleep(2)
-                prev_html = sb.get_page_source()
+                prev_html = safe_open(sb, prev_url)
                 prev_data = parse_bulletin_html(prev_html, prev_url)
                 previous_tables = prev_data["tables"]
                 previous_month = prev_data["month"]

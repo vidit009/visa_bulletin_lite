@@ -106,6 +106,22 @@ def parse_rows(table_rows, is_employment):
 
 
 def fetch_url(url):
+    import subprocess
+    cmd = [
+        "curl", "-s", "-L",
+        "-A", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "-H", "Accept-Language: en-US,en;q=0.9",
+        "--compressed",
+        url
+    ]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        if len(res.stdout) > 500:
+            return res.stdout
+    except Exception as e:
+        print(f"curl notice: {e}, falling back to urllib...")
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

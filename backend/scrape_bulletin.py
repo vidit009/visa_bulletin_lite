@@ -1,13 +1,56 @@
 import json
 import os
 import re
+import ssl
+import urllib.request
 from datetime import datetime, timezone
-from bs4 import BeautifulSoup
-from seleniumbase import SB
+from html.parser import HTMLParser
 
-INDEX_URL = "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html"
-USCIS_URL = "https://www.uscis.gov/green-card/green-card-processes-and-procedures/visa-availability-priority-dates/adjustment-of-status-filing-charts-from-the-visa-bulletin"
+USCIS_INDEX = "https://www.uscis.gov/green-card/green-card-processes-and-procedures/visa-availability-priority-dates/adjustment-of-status-filing-charts-from-the-visa-bulletin"
 COUNTRIES = ["All Chargeability", "China", "India", "Mexico", "Philippines"]
+
+
+class TableParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tables = []
+        self.current_table = None
+        self.current_row = None
+        self.current_cell = None
+        self.in_cell = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "table":
+            self.current_table = []
+        elif tag == "tr" and self.current_table is not None:
+            self.current_row = []
+        elif tag in ("th", "td") and self.current_row is not None:
+            self.current_cell = []
+            self.in_cell = True
+
+    def handle_endtag(self, tag):
+        if tag == "table" and self.current_table is not None:
+            self.tables.append(self.current_table)
+            self.current_table = None
+        elif tag == "tr" and self.current_row is not None:
+            self.current_table.append(self.current_row)
+            self.current_row = None
+        elif tag in ("th", "td") and self.current_cell is not None:
+            text = " ".join("".join(self.current_cell).split()).strip()
+            self.current_row.append(text)
+            self.current_cell = None
+            self.in_cell = False
+
+    def handle_data(self, data):
+        if self.in_cell and self.current_cell is not None:
+            self.current_cell.append(data)
+
+
+def get_ssl_context():
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 def clean(x):
@@ -44,11 +87,9 @@ def normalize_category(label, is_employment):
     return None
 
 
-def parse_table_rows(table, is_employment):
+def parse_rows(table_rows, is_employment):
     rows = {}
-    trs = table.select("tr")
-    for tr in trs:
-        cells = [clean(c.get_text()) for c in tr.select("th,td")]
+    for cells in table_rows:
         if len(cells) < 6:
             continue
         cat = normalize_category(cells[0], is_employment)
@@ -64,141 +105,200 @@ def parse_table_rows(table, is_employment):
     return rows
 
 
-def parse_bulletin_html(html, url):
-    soup = BeautifulSoup(html, "html.parser")
-    title = clean((soup.find("h1") or soup.find("title")).get_text())
-    m = re.search(r"(?:For\s+)?([A-Z][a-z]+\s+20\d{2})", title)
-    month = m.group(1) if m else title
+def fetch_url(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, context=get_ssl_context(), timeout=30) as resp:
+        return resp.read().decode("utf-8")
 
-    tables = soup.find_all("table")
-    parsed = []
-    for t in tables:
-        text = clean(t.get_text()).lower()
-        if "all chargeability" not in text or "india" not in text:
-            continue
-        is_emp = "employment" in text or any(k in text for k in ["1st", "2nd", "other workers"])
-        rows = parse_table_rows(t, is_emp)
-        if rows:
-            parsed.append((is_emp, rows))
 
-    fam = [r for is_emp, r in parsed if not is_emp]
-    emp = [r for is_emp, r in parsed if is_emp]
+def scrape_uscis():
+    print(f"Fetching official USCIS Filing Charts index: {USCIS_INDEX}...")
+    index_html = fetch_url(USCIS_INDEX)
 
-    return {
-        "month": month,
-        "sourceUrl": url,
-        "tables": {
-            "family_final": fam[0] if len(fam) > 0 else {},
-            "family_filing": fam[1] if len(fam) > 1 else {},
-            "employment_final": emp[0] if len(emp) > 0 else {},
-            "employment_filing": emp[1] if len(emp) > 1 else {},
-        },
+    # Detect Next Month section to catch newly released bulletins immediately
+    next_month_match = re.search(r"<h2>Next Month.*?</h2>(.*?)(?:<h2>|$)", index_html, re.DOTALL | re.IGNORECASE)
+    use_next = False
+    target_section = ""
+    if next_month_match:
+        section_content = next_month_match.group(1)
+        if "coming soon" not in section_content.lower() and ("href=" in section_content or "table" in section_content):
+            use_next = True
+            target_section = section_content
+            print("Detected newly published NEXT MONTH bulletin on USCIS!")
+
+    if not use_next:
+        curr_month_match = re.search(r"<h2>Current Month.*?</h2>(.*?)(?:<h2>|$)", index_html, re.DOTALL | re.IGNORECASE)
+        target_section = curr_month_match.group(1) if curr_month_match else index_html
+
+    # Extract Month Name
+    m = re.search(r"(?:Visa Bulletin for|Filing Charts:?)\s+([A-Z][a-z]+\s+20\d{2})", target_section)
+    month_name = m.group(1) if m else "September 2026"
+
+    # Extract State.gov Bulletin link if referenced
+    dos_match = re.search(r'href=[\"\'](https://travel\.state\.gov/[^\"\']+)[\"\']', target_section)
+    dos_url = (
+        dos_match.group(1)
+        if dos_match
+        else f"https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/{month_name.split()[1]}/visa-bulletin-for-{month_name.split()[0].lower()}-{month_name.split()[1]}.html"
+    )
+
+    # Determine USCIS Filing Chart recommendation
+    emp_chart = "Final Action Dates" if "final action" in target_section.lower() else "Dates for Filing"
+    fam_chart = "Dates for Filing" if "dates for filing" in target_section.lower() else "Final Action Dates"
+
+    note = f"For employment-based categories, USCIS determined to use the {emp_chart} chart. For family-sponsored categories, use {fam_chart}."
+
+    # Find the link to the detailed monthly charts page
+    chart_page_link = re.search(r'href=[\"\'](/green-card/[^\"\']+when-to-file[^\"\']+)[\"\']', target_section)
+    if not chart_page_link:
+        chart_page_link = re.search(r'href=[\"\'](https://[^\"]+when-to-file[^\"]+)[\"\']', target_section)
+
+    chart_url = None
+    if chart_page_link:
+        link_str = chart_page_link.group(1)
+        chart_url = "https://www.uscis.gov" + link_str if link_str.startswith("/") else link_str
+
+    print(f"Target Month: {month_name}")
+    print(f"DOS URL: {dos_url}")
+    print(f"Detailed Chart URL: {chart_url}")
+    print(f"Employment Determination: {emp_chart}")
+
+    current_tables = {
+        "family_final": {},
+        "family_filing": {},
+        "employment_final": {},
+        "employment_filing": {},
     }
 
+    if chart_url:
+        print(f"Fetching monthly detailed chart page: {chart_url}...")
+        page_html = fetch_url(chart_url)
+        parser = TableParser()
+        parser.feed(page_html)
+        print(f"Extracted {len(parser.tables)} tables from chart page.")
 
-def safe_open(sb, url):
-    print(f"Navigating to {url}...")
-    sb.uc_open_with_reconnect(url, reconnect_time=6)
-    sb.sleep(4)
-    for attempt in range(8):
-        title = sb.get_title()
-        if "Just a moment" in title or "Attention Required" in title:
-            print(f"Cloudflare challenge on {url} ({title}), clicking captcha (attempt {attempt + 1})...")
-            try:
-                sb.uc_gui_click_captcha()
-            except Exception as e:
-                print(f"Captcha click note: {e}")
-            sb.sleep(5)
-        else:
-            break
-    print(f"Loaded: {sb.get_title()}")
-    return sb.get_page_source()
+        if len(parser.tables) > 0:
+            fam_rows = parse_rows(parser.tables[0], is_employment=False)
+            if fam_chart == "Dates for Filing":
+                current_tables["family_filing"] = fam_rows
+            else:
+                current_tables["family_final"] = fam_rows
+
+        if len(parser.tables) > 1:
+            emp_rows = parse_rows(parser.tables[1], is_employment=True)
+            if emp_chart == "Final Action Dates":
+                current_tables["employment_final"] = emp_rows
+            else:
+                current_tables["employment_filing"] = emp_rows
+
+    # Extract Previous Month tables from archive
+    MONTHS = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    parts = month_name.split()
+    if len(parts) == 2 and parts[0] in MONTHS:
+        m_idx = MONTHS.index(parts[0])
+        y = int(parts[1])
+        expected_prev = f"{MONTHS[11]} {y - 1}" if m_idx == 0 else f"{MONTHS[m_idx - 1]} {y}"
+    else:
+        expected_prev = "August 2026"
+
+    prev_month_name = expected_prev
+    prev_tables = {}
+    prev_section = re.search(r"<h2>Previous Adjustment of Status Filing Charts</h2>(.*?)$", index_html, re.DOTALL | re.IGNORECASE)
+    if prev_section:
+        links = re.findall(r'<a[^>]+href=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</a>', prev_section.group(1), re.DOTALL)
+        for href, text in links:
+            t_clean = clean(re.sub(r"<[^<]+?>", "", text))
+            if expected_prev.lower() in t_clean.lower():
+                prev_url = href.replace("edit.uscis.gov", "www.uscis.gov")
+                if prev_url.startswith("/"):
+                    prev_url = "https://www.uscis.gov" + prev_url
+                print(f"Fetching exact previous month: {expected_prev} ({prev_url})...")
+                try:
+                    prev_html = fetch_url(prev_url)
+                    prev_parser = TableParser()
+                    prev_parser.feed(prev_html)
+                    if len(prev_parser.tables) > 0:
+                        prev_tables["family_filing"] = parse_rows(prev_parser.tables[0], is_employment=False)
+                    if len(prev_parser.tables) > 1:
+                        prev_tables["employment_final"] = parse_rows(prev_parser.tables[1], is_employment=True)
+                    print(f"Successfully parsed previous month ({expected_prev}) tables.")
+                    break
+                except Exception as ex:
+                    print(f"Could not fetch previous month: {ex}")
+                    break
+
+    return {
+        "month": month_name,
+        "sourceUrl": dos_url,
+        "uscisFilingChart": emp_chart,
+        "uscisNote": note,
+        "tables": current_tables,
+        "previousMonth": prev_month_name or "August 2026",
+        "previousTables": prev_tables,
+    }
 
 
 def main():
-    print("Launching Undetected Chrome via SeleniumBase inside Xvfb display...")
-    with SB(uc=True, test=False, headless=False) as sb:
-        index_html = safe_open(sb, INDEX_URL)
-        soup = BeautifulSoup(index_html, "html.parser")
-        bulletin_links = []
-        for a in soup.select("a[href]"):
-            href = a["href"].strip()
-            text = clean(a.get_text()).lower()
-            if any(term in href.lower() for term in ["visa-bulletin-for-", "visa-bulletin/20"]) or ("bulletin for" in text and "visa" in text):
-                if href.startswith("/"):
-                    href = "https://travel.state.gov" + href
-                if href not in bulletin_links:
-                    bulletin_links.append(href)
-                    print(f"Found bulletin link: {href} (text: {text})")
+    print("Starting automated Visa Bulletin synchronization...")
 
-        if not bulletin_links:
-            for a in soup.select("a[href]"):
-                href = a["href"].strip()
-                if "bulletin" in href.lower() and "/202" in href:
-                    if href.startswith("/"):
-                        href = "https://travel.state.gov" + href
-                    if href not in bulletin_links:
-                        bulletin_links.append(href)
-
-        if not bulletin_links:
-            page_title = sb.get_title()
-            raise RuntimeError(f"No Visa Bulletin links found on index page (page title: {page_title})")
-
-        current_url = bulletin_links[0]
-        prev_url = bulletin_links[1] if len(bulletin_links) > 1 else None
-        print(f"Current Bulletin URL: {current_url}")
-        print(f"Previous Bulletin URL: {prev_url}")
-
-        print(f"Fetching current bulletin: {current_url}...")
-        current_html = safe_open(sb, current_url)
-        current_data = parse_bulletin_html(current_html, current_url)
-
-        previous_tables = {}
-        previous_month = None
-        if prev_url:
-            try:
-                print(f"Fetching previous bulletin: {prev_url}...")
-                prev_html = safe_open(sb, prev_url)
-                prev_data = parse_bulletin_html(prev_html, prev_url)
-                previous_tables = prev_data["tables"]
-                previous_month = prev_data["month"]
-            except Exception as e:
-                print(f"Warning: could not parse previous bulletin: {e}")
-
-        # Check USCIS determination
-        chart_type = "Dates for Filing"
-        note = "For all employment-based preference categories, you must use the Dates for Filing chart."
+    # Load existing current.json to preserve full fields if already seeded
+    existing = {}
+    current_json_path = os.path.join("data", "current.json")
+    if os.path.exists(current_json_path):
         try:
-            print("Checking USCIS adjustment of status chart determination...")
-            sb.open(USCIS_URL)
-            sb.sleep(2)
-            uscis_text = sb.get_page_source().lower()
-            if "dates for filing" in uscis_text and "use the dates for filing" in uscis_text:
-                chart_type = "Dates for Filing"
-                note = "For all employment-based preference categories, you must use the Dates for Filing chart in the Department of State Visa Bulletin."
-            elif "final action dates" in uscis_text and "use the final action dates" in uscis_text:
-                chart_type = "Final Action Dates"
-                note = "USCIS determined to use the Final Action Dates chart this month."
+            with open(current_json_path, "r", encoding="utf-8") as f:
+                existing = json.load(f)
         except Exception as e:
-            print(f"USCIS check notice: {e}")
+            print(f"Note reading existing file: {e}")
+
+    try:
+        scraped = scrape_uscis()
+    except Exception as e:
+        print(f"Error scraping USCIS: {e}")
+        if existing:
+            print("Preserving existing current.json data as fallback.")
+            return
+        raise
+
+    # Merge tables cleanly so no category or historical value is lost
+    merged_tables = existing.get("tables", {})
+    for key, table_data in scraped["tables"].items():
+        if table_data:
+            if key not in merged_tables:
+                merged_tables[key] = {}
+            merged_tables[key].update(table_data)
+
+    merged_prev = existing.get("previousTables", {})
+    for key, table_data in scraped.get("previousTables", {}).items():
+        if table_data:
+            if key not in merged_prev:
+                merged_prev[key] = {}
+            merged_prev[key].update(table_data)
 
     output = {
-        "month": current_data["month"],
+        "month": scraped["month"],
         "publishedAt": datetime.now(timezone.utc).isoformat(),
-        "previousMonth": previous_month,
-        "sourceUrl": current_url,
-        "uscisFilingChart": chart_type,
-        "uscisNote": note,
-        "tables": current_data["tables"],
-        "previousTables": previous_tables,
+        "previousMonth": scraped["previousMonth"],
+        "sourceUrl": scraped["sourceUrl"],
+        "uscisFilingChart": scraped["uscisFilingChart"],
+        "uscisNote": scraped["uscisNote"],
+        "tables": merged_tables,
+        "previousTables": merged_prev,
     }
 
     os.makedirs("data", exist_ok=True)
-    out_path = os.path.join("data", "current.json")
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(current_json_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
-    print(f"Successfully generated {out_path} for {current_data['month']}!")
+    print(f"SUCCESS: Generated {current_json_path} for {scraped['month']}!")
 
 
 if __name__ == "__main__":

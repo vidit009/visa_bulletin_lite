@@ -1,8 +1,10 @@
 {
   "month": "September 2026",
-  "publishedAt": "2026-08-12T12:00:00Z",
-  "sourceUrl": "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2026/visa-bulletin-for-september-2026.html",
+  "publishedAt": "2026-09-28T03:38:06.927312+00:00",
   "previousMonth": "August 2026",
+  "sourceUrl": "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2026/visa-bulletin-for-september-2026.html",
+  "uscisFilingChart": "Final Action Dates",
+  "uscisNote": "For employment-based categories, USCIS determined to use the Final Action Dates chart. For family-sponsored categories, use Dates for Filing.",
   "tables": {
     "employment_final": {
       "EB-1": {
@@ -252,6 +254,48 @@
         "India": "15OCT22",
         "Mexico": "15OCT22",
         "Philippines": "15OCT22"
+      },
+      "Other Workers": {
+        "All Chargeability": "01APR22",
+        "China": "01MAY19",
+        "India": "01JAN14",
+        "Mexico": "01APR22",
+        "Philippines": "01DEC21"
+      },
+      "Certain Religious Workers": {
+        "All Chargeability": "15OCT22",
+        "China": "15OCT22",
+        "India": "15OCT22",
+        "Mexico": "15OCT22",
+        "Philippines": "15OCT22"
+      },
+      "EB-5 Unreserved": {
+        "All Chargeability": "C",
+        "China": "01DEC16",
+        "India": "U",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 Rural": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 High Unemployment": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 Infrastructure": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
       }
     },
     "employment_filing": {

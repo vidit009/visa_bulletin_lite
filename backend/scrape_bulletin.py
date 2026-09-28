@@ -3,7 +3,7 @@ import os
 import re
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+from seleniumbase import SB
 
 INDEX_URL = "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html"
 USCIS_URL = "https://www.uscis.gov/green-card/green-card-processes-and-procedures/visa-availability-priority-dates/adjustment-of-status-filing-charts-from-the-visa-bulletin"
@@ -97,33 +97,13 @@ def parse_bulletin_html(html, url):
 
 
 def main():
-    print("Launching Chromium via Playwright with stealth mode...")
-    from playwright_stealth import stealth_sync
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-web-security",
-            ],
-        )
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={"width": 1920, "height": 1080},
-            locale="en-US",
-            timezone_id="America/New_York",
-        )
-        page = context.new_page()
-        stealth_sync(page)
-
+    print("Launching Undetected Chrome via SeleniumBase to bypass Cloudflare...")
+    with SB(uc=True, test=False, headless=True) as sb:
         print(f"Navigating to {INDEX_URL}...")
-        page.goto(INDEX_URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(5000)
+        sb.uc_open_with_reconnect(INDEX_URL, reconnect_time=4)
+        sb.sleep(3)
 
-        index_html = page.content()
+        index_html = sb.get_page_source()
         soup = BeautifulSoup(index_html, "html.parser")
         bulletin_links = []
         for a in soup.select("a[href]"):
@@ -137,21 +117,18 @@ def main():
                     print(f"Found bulletin link: {href} (text: {text})")
 
         if not bulletin_links:
-            # Fallback: check all links containing 'bulletin'
+            # Fallback scan
             for a in soup.select("a[href]"):
                 href = a["href"].strip()
-                if "bulletin" in href.lower() and ("/202" in href or "current" in href.lower()):
+                if "bulletin" in href.lower() and "/202" in href:
                     if href.startswith("/"):
                         href = "https://travel.state.gov" + href
                     if href not in bulletin_links:
                         bulletin_links.append(href)
-                        print(f"Fallback link: {href}")
 
         if not bulletin_links:
-            # Log all links for debugging
-            all_links = [a.get("href") for a in soup.select("a[href]") if a.get("href")]
-            print(f"DEBUG: Found {len(all_links)} total links on page. Sample: {all_links[:15]}")
-            raise RuntimeError(f"No Visa Bulletin links found on index page (page title: {soup.title.string if soup.title else 'none'})")
+            page_title = soup.title.string if soup.title else "unknown"
+            raise RuntimeError(f"No Visa Bulletin links found on index page (page title: {page_title})")
 
         current_url = bulletin_links[0]
         prev_url = bulletin_links[1] if len(bulletin_links) > 1 else None
@@ -159,9 +136,9 @@ def main():
         print(f"Previous Bulletin URL: {prev_url}")
 
         print(f"Fetching current bulletin: {current_url}...")
-        page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(3000)
-        current_html = page.content()
+        sb.uc_open_with_reconnect(current_url, reconnect_time=3)
+        sb.sleep(2)
+        current_html = sb.get_page_source()
         current_data = parse_bulletin_html(current_html, current_url)
 
         previous_tables = {}
@@ -169,9 +146,9 @@ def main():
         if prev_url:
             try:
                 print(f"Fetching previous bulletin: {prev_url}...")
-                page.goto(prev_url, wait_until="domcontentloaded", timeout=60000)
-                page.wait_for_timeout(3000)
-                prev_html = page.content()
+                sb.uc_open_with_reconnect(prev_url, reconnect_time=3)
+                sb.sleep(2)
+                prev_html = sb.get_page_source()
                 prev_data = parse_bulletin_html(prev_html, prev_url)
                 previous_tables = prev_data["tables"]
                 previous_month = prev_data["month"]
@@ -183,9 +160,9 @@ def main():
         note = "For all employment-based preference categories, you must use the Dates for Filing chart."
         try:
             print("Checking USCIS adjustment of status chart determination...")
-            page.goto(USCIS_URL, wait_until="domcontentloaded", timeout=30000)
-            page.wait_for_timeout(2000)
-            uscis_text = page.content().lower()
+            sb.open(USCIS_URL)
+            sb.sleep(2)
+            uscis_text = sb.get_page_source().lower()
             if "dates for filing" in uscis_text and "use the dates for filing" in uscis_text:
                 chart_type = "Dates for Filing"
                 note = "For all employment-based preference categories, you must use the Dates for Filing chart in the Department of State Visa Bulletin."
@@ -194,8 +171,6 @@ def main():
                 note = "USCIS determined to use the Final Action Dates chart this month."
         except Exception as e:
             print(f"USCIS check notice: {e}")
-
-        browser.close()
 
     output = {
         "month": current_data["month"],

@@ -22,10 +22,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install Playwright & Dependencies
+      - name: Install SeleniumBase & Chrome
         run: |
-          pip install playwright playwright-stealth beautifulsoup4
-          playwright install chromium --with-deps
+          pip install seleniumbase beautifulsoup4
+          sbase install chromedriver
 
       - name: Run Bulletin Scraper
         run: |

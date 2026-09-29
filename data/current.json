@@ -1,10 +1,10 @@
 {
-  "month": "September 2026",
-  "publishedAt": "2026-08-12T12:00:00Z",
-  "previousMonth": "August 2026",
-  "sourceUrl": "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2026/visa-bulletin-for-september-2026.html",
-  "uscisFilingChart": "Final Action Dates",
-  "uscisNote": "For employment-based categories, USCIS determined to use the Final Action Dates chart. For family-sponsored categories, use Dates for Filing.",
+  "month": "October 2026",
+  "publishedAt": "2026-09-29T16:52:48.868053+00:00",
+  "previousMonth": "September 2026",
+  "sourceUrl": "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2027/visa-bulletin-for-october-2026.html",
+  "uscisFilingChart": "Dates for Filing",
+  "uscisNote": "For employment-based categories, USCIS determined to use the Dates for Filing chart. For family-sponsored categories, use Dates for Filing.",
   "tables": {
     "employment_final": {
       "EB-1": {

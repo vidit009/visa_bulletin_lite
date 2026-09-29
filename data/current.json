@@ -1,6 +1,6 @@
 {
   "month": "October 2026",
-  "publishedAt": "2026-09-29T16:52:48.868053+00:00",
+  "publishedAt": "2026-09-04T12:00:00Z",
   "previousMonth": "September 2026",
   "sourceUrl": "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2027/visa-bulletin-for-october-2026.html",
   "uscisFilingChart": "Dates for Filing",
@@ -10,30 +10,30 @@
       "EB-1": {
         "All Chargeability": "C",
         "China": "01JUL23",
-        "India": "15OCT22",
+        "India": "01FEB23",
         "Mexico": "C",
         "Philippines": "C"
       },
       "EB-2": {
-        "All Chargeability": "C",
-        "China": "01SEP21",
-        "India": "15JUL12",
-        "Mexico": "C",
-        "Philippines": "C"
+        "All Chargeability": "01JAN25",
+        "China": "01OCT21",
+        "India": "01NOV13",
+        "Mexico": "01JAN25",
+        "Philippines": "01JAN25"
       },
       "EB-3": {
-        "All Chargeability": "01SEP24",
-        "China": "01JAN22",
+        "All Chargeability": "15MAY24",
+        "China": "08JAN22",
         "India": "01JAN14",
-        "Mexico": "01SEP24",
-        "Philippines": "01AUG23"
+        "Mexico": "15MAY24",
+        "Philippines": "15AUG23"
       },
       "Other Workers": {
-        "All Chargeability": "01APR22",
-        "China": "01MAY19",
+        "All Chargeability": "01JAN22",
+        "China": "01OCT19",
         "India": "01JAN14",
-        "Mexico": "01APR22",
-        "Philippines": "01DEC21"
+        "Mexico": "01JAN22",
+        "Philippines": "01JAN22"
       },
       "EB-4": {
         "All Chargeability": "15DEC22",
@@ -52,7 +52,7 @@
       "EB-5 Unreserved": {
         "All Chargeability": "C",
         "China": "01DEC16",
-        "India": "01DEC20",
+        "India": "01DEC23",
         "Mexico": "C",
         "Philippines": "C"
       },
@@ -155,36 +155,36 @@
         "All Chargeability": "22JAN20",
         "China": "22JAN20",
         "India": "22JAN20",
-        "Mexico": "01JAN08",
-        "Philippines": "01MAY13"
+        "Mexico": "08SEP08",
+        "Philippines": "01NOV13"
       },
       "F2A": {
-        "All Chargeability": "22AUG26",
-        "China": "22AUG26",
-        "India": "22AUG26",
-        "Mexico": "22AUG25",
-        "Philippines": "22AUG26"
+        "All Chargeability": "22SEP26",
+        "China": "22SEP26",
+        "India": "22SEP26",
+        "Mexico": "22MAR26",
+        "Philippines": "22SEP26"
       },
       "F2B": {
         "All Chargeability": "22AUG19",
         "China": "22AUG19",
         "India": "22AUG19",
-        "Mexico": "15FEB09",
-        "Philippines": "01JUN13"
+        "Mexico": "15MAY10",
+        "Philippines": "01OCT13"
       },
       "F3": {
         "All Chargeability": "22OCT14",
         "China": "22OCT14",
         "India": "22OCT14",
         "Mexico": "01JUL01",
-        "Philippines": "22FEB06"
+        "Philippines": "22JUL06"
       },
       "F4": {
         "All Chargeability": "22OCT11",
         "China": "22OCT11",
-        "India": "01NOV06",
-        "Mexico": "08APR01",
-        "Philippines": "22AUG07"
+        "India": "15DEC06",
+        "Mexico": "22APR01",
+        "Philippines": "15MAY08"
       }
     },
     "family_filing": {
@@ -237,7 +237,7 @@
       "EB-2": {
         "All Chargeability": "C",
         "China": "01SEP21",
-        "India": "15JUN12",
+        "India": "U",
         "Mexico": "C",
         "Philippines": "C"
       },
@@ -248,13 +248,6 @@
         "Mexico": "01SEP24",
         "Philippines": "01AUG23"
       },
-      "EB-4": {
-        "All Chargeability": "15OCT22",
-        "China": "15OCT22",
-        "India": "15OCT22",
-        "Mexico": "15OCT22",
-        "Philippines": "15OCT22"
-      },
       "Other Workers": {
         "All Chargeability": "01APR22",
         "China": "01MAY19",
@@ -262,17 +255,24 @@
         "Mexico": "01APR22",
         "Philippines": "01DEC21"
       },
+      "EB-4": {
+        "All Chargeability": "15DEC22",
+        "China": "15DEC22",
+        "India": "15DEC22",
+        "Mexico": "15DEC22",
+        "Philippines": "15DEC22"
+      },
       "Certain Religious Workers": {
-        "All Chargeability": "15OCT22",
-        "China": "15OCT22",
-        "India": "15OCT22",
-        "Mexico": "15OCT22",
-        "Philippines": "15OCT22"
+        "All Chargeability": "15DEC22",
+        "China": "15DEC22",
+        "India": "15DEC22",
+        "Mexico": "15DEC22",
+        "Philippines": "15DEC22"
       },
       "EB-5 Unreserved": {
         "All Chargeability": "C",
         "China": "01DEC16",
-        "India": "01DEC20",
+        "India": "U",
         "Mexico": "C",
         "Philippines": "C"
       },
@@ -320,56 +320,98 @@
         "Mexico": "C",
         "Philippines": "01JAN24"
       },
+      "Other Workers": {
+        "All Chargeability": "01AUG22",
+        "China": "01OCT19",
+        "India": "15JAN15",
+        "Mexico": "01AUG22",
+        "Philippines": "01AUG22"
+      },
       "EB-4": {
         "All Chargeability": "01JAN23",
         "China": "01JAN23",
         "India": "01JAN23",
         "Mexico": "01JAN23",
         "Philippines": "01JAN23"
+      },
+      "Certain Religious Workers": {
+        "All Chargeability": "01JAN23",
+        "China": "01JAN23",
+        "India": "01JAN23",
+        "Mexico": "01JAN23",
+        "Philippines": "01JAN23"
+      },
+      "EB-5 Unreserved": {
+        "All Chargeability": "C",
+        "China": "01MAR17",
+        "India": "01MAY24",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 Rural": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 High Unemployment": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
+      },
+      "EB-5 Infrastructure": {
+        "All Chargeability": "C",
+        "China": "C",
+        "India": "C",
+        "Mexico": "C",
+        "Philippines": "C"
       }
     },
     "family_final": {
       "F1": {
-        "All Chargeability": "15DEC18",
-        "China": "15DEC18",
-        "India": "15DEC18",
-        "Mexico": "01DEC07",
+        "All Chargeability": "22JAN20",
+        "China": "22JAN20",
+        "India": "22JAN20",
+        "Mexico": "01JAN08",
         "Philippines": "01MAY13"
       },
       "F2A": {
-        "All Chargeability": "22JUL26",
-        "China": "22JUL26",
-        "India": "22JUL26",
-        "Mexico": "22JUL25",
-        "Philippines": "22JUL26"
+        "All Chargeability": "22AUG26",
+        "China": "22AUG26",
+        "India": "22AUG26",
+        "Mexico": "22AUG25",
+        "Philippines": "22AUG26"
       },
       "F2B": {
-        "All Chargeability": "01JAN18",
-        "China": "01JAN18",
-        "India": "01JAN18",
+        "All Chargeability": "22AUG19",
+        "China": "22AUG19",
+        "India": "22AUG19",
         "Mexico": "15FEB09",
         "Philippines": "01JUN13"
       },
       "F3": {
-        "All Chargeability": "15MAY12",
-        "China": "15MAY12",
-        "India": "15MAY12",
+        "All Chargeability": "22OCT14",
+        "China": "22OCT14",
+        "India": "22OCT14",
         "Mexico": "01JUL01",
         "Philippines": "22FEB06"
       },
       "F4": {
-        "All Chargeability": "01SEP09",
-        "China": "01SEP09",
+        "All Chargeability": "22OCT11",
+        "China": "22OCT11",
         "India": "01NOV06",
         "Mexico": "08APR01",
-        "Philippines": "01AUG07"
+        "Philippines": "22AUG07"
       }
     },
     "family_filing": {
       "F1": {
-        "All Chargeability": "15JUN19",
-        "China": "15JUN19",
-        "India": "15JUN19",
+        "All Chargeability": "01FEB20",
+        "China": "01FEB20",
+        "India": "01FEB20",
         "Mexico": "01DEC08",
         "Philippines": "22APR15"
       },
@@ -381,22 +423,22 @@
         "Philippines": "C"
       },
       "F2B": {
-        "All Chargeability": "01JAN19",
-        "China": "01JAN19",
-        "India": "01JAN19",
+        "All Chargeability": "01SEP19",
+        "China": "01SEP19",
+        "India": "01SEP19",
         "Mexico": "15MAY10",
         "Philippines": "01OCT13"
       },
       "F3": {
-        "All Chargeability": "01MAR13",
-        "China": "01MAR13",
-        "India": "01MAR13",
+        "All Chargeability": "01NOV14",
+        "China": "01NOV14",
+        "India": "01NOV14",
         "Mexico": "15JUL01",
         "Philippines": "08AUG06"
       },
       "F4": {
-        "All Chargeability": "22JUN10",
-        "China": "22JUN10",
+        "All Chargeability": "01NOV11",
+        "China": "01NOV11",
         "India": "15DEC06",
         "Mexico": "30APR01",
         "Philippines": "22MAR08"

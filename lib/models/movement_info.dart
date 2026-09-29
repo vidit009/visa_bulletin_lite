@@ -164,6 +164,22 @@ MovementInfo calculateMovement(String? before, String now) {
   }
 }
 
+class CategoryMovementDetail {
+  final String category;
+  final String country;
+  final String currentValue;
+  final String? previousValue;
+  final MovementInfo movement;
+
+  const CategoryMovementDetail({
+    required this.category,
+    required this.country,
+    required this.currentValue,
+    required this.previousValue,
+    required this.movement,
+  });
+}
+
 class MonthMovementSummary {
   final int advanced;
   final int unchanged;
@@ -172,6 +188,9 @@ class MonthMovementSummary {
   final String? biggestCountry;
   final int biggestDays;
   final String? biggestLabel;
+  final List<CategoryMovementDetail> advancedList;
+  final List<CategoryMovementDetail> unchangedList;
+  final List<CategoryMovementDetail> retrogressedList;
 
   const MonthMovementSummary({
     required this.advanced,
@@ -181,6 +200,9 @@ class MonthMovementSummary {
     this.biggestCountry,
     this.biggestDays = 0,
     this.biggestLabel,
+    this.advancedList = const [],
+    this.unchangedList = const [],
+    this.retrogressedList = const [],
   });
 }
 
@@ -195,15 +217,27 @@ MonthMovementSummary calculateMonthSummary({
   String? maxCat;
   String? maxCountry;
   String? maxLabel;
+  final List<CategoryMovementDetail> advancedList = [];
+  final List<CategoryMovementDetail> unchangedList = [];
+  final List<CategoryMovementDetail> retrogressedList = [];
 
   currentTable.forEach((cat, countries) {
     countries.forEach((country, curVal) {
       final prevVal = previousTable[cat]?[country];
       final m = calculateMovement(prevVal, curVal);
+      final item = CategoryMovementDetail(
+        category: cat,
+        country: country,
+        currentValue: curVal,
+        previousValue: prevVal,
+        movement: m,
+      );
+
       if (m.type == MovementType.advanced ||
           m.type == MovementType.becameCurrent ||
           m.type == MovementType.restored) {
         adv++;
+        advancedList.add(item);
         if (m.days > maxAdvDays) {
           maxAdvDays = m.days;
           maxCat = cat;
@@ -213,10 +247,23 @@ MonthMovementSummary calculateMonthSummary({
       } else if (m.type == MovementType.retrogressed ||
           m.type == MovementType.becameUnavailable) {
         ret++;
+        retrogressedList.add(item);
       } else {
         unc++;
+        unchangedList.add(item);
       }
     });
+  });
+
+  // Sort advanced by movement days descending (largest progress first)
+  advancedList.sort((a, b) => b.movement.days.compareTo(a.movement.days));
+  // Sort retrogressed by negative movement days ascending (largest drop first)
+  retrogressedList.sort((a, b) => a.movement.days.compareTo(b.movement.days));
+  // Sort unchanged by category then country
+  unchangedList.sort((a, b) {
+    final catCmp = a.category.compareTo(b.category);
+    if (catCmp != 0) return catCmp;
+    return a.country.compareTo(b.country);
   });
 
   return MonthMovementSummary(
@@ -227,5 +274,8 @@ MonthMovementSummary calculateMonthSummary({
     biggestCountry: maxCountry,
     biggestDays: maxAdvDays,
     biggestLabel: maxLabel,
+    advancedList: advancedList,
+    unchangedList: unchangedList,
+    retrogressedList: retrogressedList,
   );
 }

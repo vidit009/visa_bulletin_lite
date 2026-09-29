@@ -315,14 +315,31 @@ def main():
         if table_data:
             if key not in merged_tables:
                 merged_tables[key] = {}
-            merged_tables[key].update(table_data)
+            for cat, countries in table_data.items():
+                if cat not in merged_tables[key]:
+                    merged_tables[key][cat] = {}
+                for country, val in countries.items():
+                    existing_val = merged_tables[key][cat].get(country)
+                    # Protect established cutoff dates from being overwritten by unexpected 'U' values
+                    if val == "U" and existing_val and existing_val not in ("U", "—", ""):
+                        print(f"Retaining established cutoff date {existing_val} for {cat} ({country}) instead of 'U'")
+                    else:
+                        merged_tables[key][cat][country] = val
 
     merged_prev = existing.get("previousTables", {})
     for key, table_data in scraped.get("previousTables", {}).items():
         if table_data:
             if key not in merged_prev:
                 merged_prev[key] = {}
-            merged_prev[key].update(table_data)
+            for cat, countries in table_data.items():
+                if cat not in merged_prev[key]:
+                    merged_prev[key][cat] = {}
+                for country, val in countries.items():
+                    existing_val = merged_prev[key][cat].get(country)
+                    if val == "U" and existing_val and existing_val not in ("U", "—", ""):
+                        print(f"Retaining established previous cutoff date {existing_val} for {cat} ({country}) instead of 'U'")
+                    else:
+                        merged_prev[key][cat][country] = val
 
     # Preserve original publishedAt timestamp unless a newly released bulletin month is detected
     if existing.get("month") == scraped["month"] and existing.get("publishedAt"):

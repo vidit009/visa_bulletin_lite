@@ -22,6 +22,7 @@ import '../widgets/disclaimer_card.dart';
 import '../widgets/filter_controls.dart';
 import '../widgets/header_status_banner.dart';
 import '../widgets/notification_preferences_sheet.dart';
+import '../widgets/movement_badge.dart';
 import '../widgets/uscis_filing_chart_card.dart';
 import '../widgets/your_beacon_card.dart';
 
@@ -378,6 +379,255 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     );
   }
 
+  void _showMovementDetailsSheet({
+    required String title,
+    required String subtitle,
+    required List<CategoryMovementDetail> items,
+    required Color accentColor,
+    required IconData icon,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return DraggableScrollableSheet(
+          initialChildSize: 0.72,
+          minChildSize: 0.4,
+          maxChildSize: 0.94,
+          builder: (sheetCtx, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black38,
+                    blurRadius: 20,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, size: 20, color: accentColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // Content List or Empty State
+                  Expanded(
+                    child: items.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      size: 40,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No Categories In This Status',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'All cutoff dates either advanced or remained stable in this edition.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark ? Colors.white60 : Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (itemCtx, index) {
+                              final item = items[index];
+                              final flag = getCountryFlag(item.country);
+                              final isUserCat = item.category == category &&
+                                  (item.country == country || item.country == getChargeabilityKey(country));
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isUserCat
+                                        ? const Color(0xFF0284C7)
+                                        : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                                    width: isUserCat ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Country Flag
+                                    Text(flag, style: const TextStyle(fontSize: 22)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  item.category,
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: Color(0xFF0284C7),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  item.country,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (isUserCat) ...[
+                                                const SizedBox(width: 4),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text(
+                                                    'YOU',
+                                                    style: TextStyle(
+                                                      fontSize: 8.5,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: Color(0xFFD97706),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          // Date Progression
+                                          Text(
+                                            item.previousValue != null && item.previousValue != item.currentValue
+                                                ? '${formatCutoffDate(item.previousValue!)}  →  ${formatCutoffDate(item.currentValue)}'
+                                                : formatCutoffDate(item.currentValue),
+                                            style: TextStyle(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Movement Badge
+                                    MovementBadge(movement: item.movement),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading && bulletin == null) {
@@ -635,6 +885,42 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             BeaconBriefCard(
               month: b.month,
               summary: monthSummary,
+              onFilterAdvanced: () {
+                _showMovementDetailsSheet(
+                  title: 'Advanced Categories',
+                  subtitle: '${b.month} • ${monthSummary.advanced} categories moved forward',
+                  items: monthSummary.advancedList,
+                  accentColor: const Color(0xFF10B981),
+                  icon: Icons.arrow_upward_rounded,
+                );
+              },
+              onFilterUnchanged: () {
+                _showMovementDetailsSheet(
+                  title: 'Unchanged Categories',
+                  subtitle: '${b.month} • ${monthSummary.unchanged} categories unchanged',
+                  items: monthSummary.unchangedList,
+                  accentColor: const Color(0xFF64748B),
+                  icon: Icons.remove_rounded,
+                );
+              },
+              onFilterRetrogressed: () {
+                _showMovementDetailsSheet(
+                  title: 'Retrogressed Categories',
+                  subtitle: '${b.month} • ${monthSummary.retrogressed} categories retrogressed',
+                  items: monthSummary.retrogressedList,
+                  accentColor: const Color(0xFFEF4444),
+                  icon: Icons.arrow_downward_rounded,
+                );
+              },
+              onTapBiggest: () {
+                _showMovementDetailsSheet(
+                  title: 'Advanced Categories',
+                  subtitle: 'Highlighting biggest advancement in ${b.month}',
+                  items: monthSummary.advancedList,
+                  accentColor: const Color(0xFF10B981),
+                  icon: Icons.flash_on_rounded,
+                );
+              },
             ),
 
             const SizedBox(height: 12),

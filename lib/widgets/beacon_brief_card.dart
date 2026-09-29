@@ -9,6 +9,7 @@ class BeaconBriefCard extends StatelessWidget {
   final VoidCallback? onFilterAdvanced;
   final VoidCallback? onFilterUnchanged;
   final VoidCallback? onFilterRetrogressed;
+  final VoidCallback? onTapBiggest;
 
   const BeaconBriefCard({
     super.key,
@@ -17,6 +18,7 @@ class BeaconBriefCard extends StatelessWidget {
     this.onFilterAdvanced,
     this.onFilterUnchanged,
     this.onFilterRetrogressed,
+    this.onTapBiggest,
   });
 
   @override
@@ -120,55 +122,65 @@ class BeaconBriefCard extends StatelessWidget {
           // Biggest Movement Highlight
           if (summary.biggestCategory != null && summary.biggestDays > 0) ...[
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_upward_rounded, size: 12, color: Colors.white),
+            InkWell(
+              onTap: onTapBiggest,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.25),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Biggest Movement: ',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white70 : const Color(0xFF065F46),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_upward_rounded, size: 12, color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Biggest Movement: ',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white70 : const Color(0xFF065F46),
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: '${summary.biggestCategory} (${summary.biggestCountry ?? 'All'}) • ${summary.biggestLabel ?? '+${summary.biggestDays} days'}',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : const Color(0xFF047857),
+                            TextSpan(
+                              text: '${summary.biggestCategory} (${summary.biggestCountry ?? 'All'}) • ${summary.biggestLabel ?? '+${summary.biggestDays} days'}',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : const Color(0xFF047857),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    getCountryFlag(summary.biggestCountry ?? ''),
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
+                    Text(
+                      getCountryFlag(summary.biggestCountry ?? ''),
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: isDark ? Colors.white38 : Colors.black26,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

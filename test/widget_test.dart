@@ -127,6 +127,25 @@ void main() {
       expect(restored.type, MovementType.restored);
       expect(restored.shortLabel, 'Restored');
     });
+
+    test('calculateMonthSummary categorizes and populates detail lists', () {
+      final cur = {
+        'EB-2': {'India': '15JUL12', 'China': '01SEP21'},
+        'EB-4': {'All Chargeability': '15DEC22'},
+      };
+      final prev = {
+        'EB-2': {'India': '15JUN12', 'China': '01SEP21'},
+        'EB-4': {'All Chargeability': '15OCT22'},
+      };
+      final summary = calculateMonthSummary(currentTable: cur, previousTable: prev);
+      expect(summary.advanced, 2);
+      expect(summary.unchanged, 1);
+      expect(summary.retrogressed, 0);
+      expect(summary.advancedList.length, 2);
+      expect(summary.unchangedList.length, 1);
+      expect(summary.retrogressedList.length, 0);
+      expect(summary.biggestCategory, 'EB-4');
+    });
   });
 
   group('3. Bulletin Model & Parser Tests', () {
@@ -380,6 +399,59 @@ void main() {
       await tester.pump();
 
       expect(selected, 'EB-1');
+    });
+
+    testWidgets('BeaconBriefCard triggers callbacks when stat badges and biggest movement are tapped', (tester) async {
+      bool tappedAdv = false;
+      bool tappedUnc = false;
+      bool tappedRet = false;
+      bool tappedBig = false;
+
+      final summary = MonthMovementSummary(
+        advanced: 10,
+        unchanged: 40,
+        retrogressed: 0,
+        biggestCategory: 'EB-4',
+        biggestCountry: 'All Chargeability',
+        biggestDays: 61,
+        biggestLabel: '+2 months (61 days)',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: BeaconBriefCard(
+              month: 'September 2026',
+              summary: summary,
+              onFilterAdvanced: () => tappedAdv = true,
+              onFilterUnchanged: () => tappedUnc = true,
+              onFilterRetrogressed: () => tappedRet = true,
+              onTapBiggest: () => tappedBig = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('10 Advanced'), findsOneWidget);
+      expect(find.text('40 No change'), findsOneWidget);
+      expect(find.text('0 Retrogressed'), findsOneWidget);
+
+      await tester.tap(find.text('10 Advanced'));
+      await tester.pump();
+      expect(tappedAdv, isTrue);
+
+      await tester.tap(find.text('40 No change'));
+      await tester.pump();
+      expect(tappedUnc, isTrue);
+
+      await tester.tap(find.text('0 Retrogressed'));
+      await tester.pump();
+      expect(tappedRet, isTrue);
+
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.pump();
+      expect(tappedBig, isTrue);
     });
   });
 

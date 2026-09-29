@@ -275,15 +275,49 @@ class YourBeaconCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          Text(
-            formatCutoffDate(currentVal),
-            style: TextStyle(
-              fontSize: 16.5,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+          if (currentVal.trim().toUpperCase() == 'U') ...[
+            Row(
+              children: [
+                Text(
+                  'Unavailable',
+                  style: TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                    color: isDark ? Colors.amber.shade300 : const Color(0xFFD97706),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Visas are unauthorized for issuance this month as annual quota was reached.',
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: isDark ? Colors.amber.shade300 : const Color(0xFFD97706),
+                  ),
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 2),
+            Text(
+              'Annual Quota Reached',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.amber.shade200 : const Color(0xFFB45309),
+              ),
+            ),
+          ] else ...[
+            Text(
+              formatCutoffDate(currentVal),
+              style: TextStyle(
+                fontSize: 16.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           MovementBadge(movement: movement),
           if (previousVal != null) ...[
